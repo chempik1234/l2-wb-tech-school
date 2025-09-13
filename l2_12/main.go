@@ -12,13 +12,6 @@ import (
 	"strings"
 )
 
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func printLine(printNumbers bool, filename string, lineno int, lineIsFound bool, value string) {
 	if len(filename) > 0 {
 		if lineIsFound {
