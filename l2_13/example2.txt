@@ -1,0 +1,6 @@
+a,b,c
+a:b:c
+no_delimiter_here
+x-y-z
+last:line:here
+another line without delimiter

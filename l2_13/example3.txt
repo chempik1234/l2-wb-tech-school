@@ -1,0 +1,5 @@
+a	b	c	d
+привет:мир:тест
+hello🌍world:test:case
+a::b::c
+normal:line:here
