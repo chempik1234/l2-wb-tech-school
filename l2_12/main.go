@@ -86,6 +86,7 @@ func main() {
 		// args = template, file1.txt, file2.txt
 		// readers = Reader(file1.txt), Reader(file2.txt)
 		var file *os.File
+		var files []*os.File // save to close!!!
 		for i := 1; i < len(args); i++ {
 			filename := args[i]
 			file, err = os.Open(filename)
@@ -95,6 +96,18 @@ func main() {
 			readers = append(readers, bufio.NewReader(file))
 			fileNames = append(fileNames, filename)
 		}
+
+		// close files func
+		defer func() {
+			for _, f := range files {
+				if f != nil {
+					err = f.Close()
+					if err != nil {
+						fmt.Println("error closing file:", f, err)
+					}
+				}
+			}
+		}()
 	}
 
 	// store pointer to not occupy too much memory if unused
