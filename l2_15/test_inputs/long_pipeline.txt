@@ -1,0 +1,4 @@
+echo "start" | cat - | tr 'a-z' 'A-Z' | rev | cut -c2- | tee /tmp/test_output.txt
+cat /tmp/test_output.txt
+rm /tmp/test_output.txt
+exit

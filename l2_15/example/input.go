@@ -1,13 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
 
 func main() {
 	fmt.Println("EXAMPLE")
 
-	var s string
-
-	_, _ = fmt.Scanln(&s)
-
-	fmt.Println("you scanned:", s)
+	// better than scanln
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		fmt.Printf("you scanned: %s\n", scanner.Text())
+	}
 }

@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -27,9 +29,15 @@ func printFromChan(wg *sync.WaitGroup, input <-chan string) {
 
 func executeCommand(ctx context.Context, pwd *string, input <-chan string, executeString string) <-chan string {
 	resultChan := make(chan string)
+
 	go func() {
 		defer close(resultChan)
-		fields := strings.Fields(executeString)
+
+		fields := parseFields(executeString)
+
+		if len(fields) == 0 {
+			return
+		}
 		commandName := fields[0]
 		args := fields[1:]
 
@@ -49,6 +57,11 @@ func executeCommand(ctx context.Context, pwd *string, input <-chan string, execu
 }
 
 func main() {
+	wFlag := flag.Bool("w", false, "don't print pwd like '(GO CMD) C:\\Users\\User\\l2_15'. If testing, set TRUE!")
+	flag.Parse()
+
+	skipPrintPWD := *wFlag
+
 	pwdStr, err := os.Getwd()
 	if err != nil {
 		log.Fatal(fmt.Errorf("could not get pwd: %w", err))
@@ -78,8 +91,13 @@ func main() {
 
 	var toContinue bool
 
+	var ok bool
+
+main:
 	for {
-		fmt.Print("(GO CMD) ", *pwd, ">")
+		if !skipPrintPWD {
+			fmt.Print("(GO CMD) ", *pwd, ">")
+		}
 
 		toContinue = false
 
@@ -87,7 +105,10 @@ func main() {
 		select {
 		case <-ctx.Done():
 			toContinue = true
-		case inputData = <-readerChan:
+		case inputData, ok = <-readerChan:
+			if !ok {
+				break main
+			}
 			break
 		}
 
@@ -96,11 +117,6 @@ func main() {
 
 		if len(input) == 0 {
 			toContinue = true
-		}
-
-		if toContinue {
-			fmt.Print("\n")
-			continue
 		}
 
 		if isCtrlD(input) {
@@ -114,16 +130,30 @@ func main() {
 			log.Fatal(err)
 		}
 
+		if toContinue {
+			fmt.Print("\n")
+			continue
+		}
+
 		tokens = strings.Split(input, "|")
 
 		if len(tokens) == 0 {
 			continue
 		}
 
+		// clean all commands
+		for i, v := range tokens {
+			tokens[i] = cleanString(v)
+		}
+
+		if slices.Contains(tokens, "exit") {
+			return
+		}
+
 		ctx, stop = signal.NotifyContext(context.Background(), os.Interrupt)
 
 		onlyInputChan := make(chan string)
-		go func(ctx context.Context, input <-chan inputErr, output chan<- string) {
+		go func(ctx context.Context, input chan inputErr, output chan<- string) {
 			var value inputErr
 		out2:
 			for {
@@ -137,7 +167,13 @@ func main() {
 					if len(value.input) == 0 || isCtrlD(value.input) {
 						break out2
 					}
-					onlyInputChan <- value.input
+					select {
+					case <-ctx.Done():
+						input <- value
+						break
+					case onlyInputChan <- value.input:
+						break
+					}
 				}
 			}
 			close(output)
@@ -146,7 +182,6 @@ func main() {
 		var currentReadChan <-chan string
 		currentReadChan = onlyInputChan
 		for _, token := range tokens {
-			token = cleanString(token)
 			currentReadChan = executeCommand(ctx, pwd, currentReadChan, token)
 		}
 

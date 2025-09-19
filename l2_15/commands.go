@@ -77,6 +77,17 @@ var psCommand commandFunc = func(ctx context.Context, pwd *string, commandName s
 	}
 }
 
+var envCommand commandFunc = func(ctx context.Context, pwd *string, commandName string, args []string, inputChan <-chan string, resultChan chan<- string) {
+	if len(args) == 0 {
+		return
+	}
+	data := strings.Split(args[0], "=")
+	err := os.Setenv(data[0], data[1])
+	if err != nil {
+		resultChan <- fmt.Sprintf("couldn't set env var: %v", err)
+	}
+}
+
 func execCommand(ctx context.Context, pwd *string, commandName string, commandArgs []string, inputChan <-chan string, resultChan chan<- string) {
 	// firstly remove <, > from args
 
@@ -167,13 +178,14 @@ func execCommand(ctx context.Context, pwd *string, commandName string, commandAr
 	}
 
 	// empty the rest values in input channel
-	emptyChannel(inputChan)
+	// emptyChannel(inputChan)
 }
 
 var commands = map[string]commandFunc{
-	"kill": killCommand,
-	"pwd":  pwdCommand,
-	"cd":   cdCommand,
-	"echo": echoCommand,
-	"ps":   psCommand,
+	"kill":   killCommand,
+	"pwd":    pwdCommand,
+	"cd":     cdCommand,
+	"echo":   echoCommand,
+	"ps":     psCommand,
+	"setenv": envCommand,
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -122,6 +123,59 @@ func parseArgs(args []string) ([]string, string, string, error) {
 		}
 	}
 	return result, inputRedirect, outputRedirect, nil
+}
+
+// parseFields converts a string
+//
+// 'echo sss"home1 ohome2" "home3\n"'
+//
+// into
+//
+// [`echo`, `ssshome1 ohome2` `home3\n`]
+func parseFields(executeString string) []string {
+	// read fields, but not with strings.Fields because of quotes!
+	//
+	// no escaping with \
+	//
+	// "aaaaaaaaaaaaaaaaaa         aaaaaaaa"
+	// true true true true true true true  false
+	//
+	readingQuote := false
+
+	// if we found any reason to finish word, we append it whole into slice
+	foundSeparator := false
+
+	// currently building field
+	currentFieldBuffer := strings.Builder{}
+
+	fields := make([]string, 0)
+	for _, char := range executeString + " " {
+		foundSeparator = false
+		if char == '"' {
+			if readingQuote {
+				foundSeparator = true
+			}
+			readingQuote = !readingQuote
+		} else if unicode.IsSpace(char) {
+			if !readingQuote {
+				foundSeparator = true
+			} else {
+				currentFieldBuffer.WriteRune(char)
+			}
+		} else {
+			currentFieldBuffer.WriteRune(char)
+		}
+
+		if foundSeparator {
+			if currentFieldBuffer.Len() == 0 {
+				continue
+			}
+			fields = append(fields, currentFieldBuffer.String())
+			currentFieldBuffer.Reset()
+		}
+	}
+
+	return fields
 }
 
 func emptyChannel[T any](ch <-chan T) {

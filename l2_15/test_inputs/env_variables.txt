@@ -1,0 +1,8 @@
+export PATH=/usr/bin:/bin
+export TEST=hello
+export NUMBER=123
+echo "Path: $PATH"
+echo "Test: $TEST"
+echo "Number: $NUMBER"
+echo "Mixed: $TEST$NUMBER"
+exit

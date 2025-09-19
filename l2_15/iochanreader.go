@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -34,6 +35,8 @@ func (r *ChanReader) Read(p []byte) (n int, err error) {
 		}
 		r.buffer = s
 	}
+
+	r.buffer = strings.TrimRight(r.buffer, "\r\n") + "\n"
 
 	n = copy(p, r.buffer)
 	r.buffer = r.buffer[n:]
