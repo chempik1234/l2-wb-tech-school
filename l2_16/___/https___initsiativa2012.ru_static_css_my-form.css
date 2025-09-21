@@ -1,0 +1,58 @@
+.my-form {
+    margin: auto;
+    padding: 10px;
+    border: 2px outset steelblue;
+    border-radius: 10px;
+    background: white;
+    display: block;
+    box-shadow: 10px 10px 0 orange;
+}
+@media screen and (max-width: 576px){
+    .my-form {margin: 20px;}
+}
+.my-form >div {
+    padding: 10px 5px 10px 5px;
+    border: hidden;
+    border-radius: 20px;
+}
+.my-form>div:not(:first-child){
+    margin: 5px 0px 0px 0px;
+}
+.my-form>div:first-child{
+    margin: 5px 0px 0px 0px;
+}
+.my-form>div:last-child{
+    margin: 5px 0px 5px 0px;
+}
+.my-form label {
+    width: 100%;
+    color: black;
+    font-style: oblique;
+    font-family: emoji;
+    font-size: 1.5em;
+}
+.my-form div input {
+    font-family: cursive;
+    font-size: 1.2em;
+    outline: none;
+    border: hidden;
+    border-bottom: 2px solid limegreen;
+    /* border-radius: 5px; */
+    padding: 5px;
+    width: 100%;
+    transition: all 0.2s;
+}
+.my-form div input:focus {
+    background-color: ghostwhite;
+    border: hidden;
+    border-bottom: 2px dashed blue;
+    /*border-radius: 5px;
+    padding: 5px 5px 1em 5px;*/
+    width: 100%;
+    transition: all 0.2s;
+}
+.my-form textarea {
+    width: 100%;
+    border: 2px solid limegreen;
+    outline: none;
+}
