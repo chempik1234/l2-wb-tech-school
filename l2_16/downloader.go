@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
-	"sync/atomic"
 )
 
 // Downloader does all the job in this module
@@ -22,12 +20,12 @@ type Downloader struct {
 	// retries is the number that describes tries count per any operation that can be retried
 	retries int
 
-	// parser is the ParserToLocalFiles used for processing input html data, can be replaced
+	// parser is the Parser used for processing input html data, can be replaced
 	parser IParser
 }
 
 // NewDownloader creates a new *Downloader with given client and retries and empty savedLinks cache
-func NewDownloader(client *http.Client, retries int, parser *ParserToLocalFiles) *Downloader {
+func NewDownloader(client *http.Client, retries int, parser *Parser) *Downloader {
 	return &Downloader{
 		client:     client,
 		savedLinks: make(map[string]struct{}, 0),
@@ -44,7 +42,7 @@ func NewDownloader(client *http.Client, retries int, parser *ParserToLocalFiles)
 // where 10 is input depth (-d 10), with every level it goes down
 //
 // if depthLeft - 1 == 0 then return, else continue
-func (d *Downloader) download(urlToDownload *url.URL, pageNum *atomic.Int32, saveDirectory string, depthLeft int) error {
+func (d *Downloader) download(urlToDownload *url.URL, saveDirectory string, depthLeft int) error {
 	urlString := urlToDownload.String()
 	// we should not lock it for too long
 	d.mu.Lock()
@@ -81,17 +79,13 @@ func (d *Downloader) download(urlToDownload *url.URL, pageNum *atomic.Int32, sav
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	if strings.HasPrefix(fileName, ".") {
-		fileName = fmt.Sprintf("%s%c%d.%s", saveDirectory, os.PathSeparator, pageNum.Load(), fileName)
-	}
+	fileName = fmt.Sprintf("%s%c%s", saveDirectory, os.PathSeparator, fileName)
 	//endregion
 
 	err = d.save(parsedFileData, fileName)
 	if err != nil {
 		return fmt.Errorf("failed to save file: %w", err)
 	}
-
-	pageNum.Add(1)
 
 	//region recursive
 
@@ -104,7 +98,7 @@ func (d *Downloader) download(urlToDownload *url.URL, pageNum *atomic.Int32, sav
 	wg2.Add(len(parsedSubLinks))
 
 	for _, subLink := range parsedSubLinks {
-		go func(wg2 *sync.WaitGroup, subLink string, saveDirectory string, pageNum *atomic.Int32, depthLeft int) {
+		go func(wg2 *sync.WaitGroup, subLink string, saveDirectory string, depthLeft int) {
 			defer wg2.Done()
 
 			var subURL *url.URL
@@ -115,12 +109,12 @@ func (d *Downloader) download(urlToDownload *url.URL, pageNum *atomic.Int32, sav
 				fmt.Println(fmt.Errorf("failed to parse sub link %s: %w", subLink, err))
 			}
 
-			err = d.download(subURL, pageNum, saveDirectory, depthLeft)
+			err = d.download(subURL, saveDirectory, depthLeft)
 
 			if err != nil {
 				fmt.Println(fmt.Errorf("failed to fetch sub link %s: %w", subLink, err))
 			}
-		}(wg2, subLink, saveDirectory, pageNum, depthLeft-1)
+		}(wg2, subLink, saveDirectory, depthLeft-1)
 	}
 
 	wg2.Wait()
@@ -159,8 +153,8 @@ func (d *Downloader) save(fileData []byte, filePath string) error {
 }
 
 // Start calls a root Downloader.download, returns error if root failed, waits for all recursive operations to complete
-func (d *Downloader) Start(urlToDownload *url.URL, pageNum *atomic.Int32, saveDirectory string, depthLeft int) error {
-	err := d.download(urlToDownload, pageNum, saveDirectory, depthLeft)
+func (d *Downloader) Start(urlToDownload *url.URL, saveDirectory string, depthLeft int) error {
+	err := d.download(urlToDownload, saveDirectory, depthLeft)
 	if err != nil {
 		return fmt.Errorf("failed to download page: %w", err)
 	}

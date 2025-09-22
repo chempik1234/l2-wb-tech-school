@@ -14,24 +14,24 @@ import (
 type IParser interface {
 	// ParseResponse (if html) parses response for links and replaces them with local filenames, returning the links and error
 	//
-	// if HTML: return processed file as []byte, []string of recursive links, .fileFormat, err
+	// if HTML: return processed file as []byte, []string of recursive links, fileName, err
 	//
-	// else: return nil, nil, file format, err
+	// else: return nil, nil, file name, err
 	ParseResponse(urlFrom *url.URL, resp *http.Response) ([]byte, []string, string, error)
 }
 
-// ParserToLocalFiles returns a file name to save locally instead of file format
-type ParserToLocalFiles struct {
+// Parser actually parses and returns a file name to save locally
+type Parser struct {
 	localFileDirectory string
 }
 
 // NewParserToLocalFiles creates a new NewParserToLocalFiles that creates file names for a given directory
-func NewParserToLocalFiles(localFileDirectory string) *ParserToLocalFiles {
-	return &ParserToLocalFiles{localFileDirectory: localFileDirectory}
+func NewParserToLocalFiles(localFileDirectory string) *Parser {
+	return &Parser{localFileDirectory: localFileDirectory}
 }
 
-// ParseResponse in ParserToLocalFiles returns full filePath instead of just .format
-func (p *ParserToLocalFiles) ParseResponse(urlFrom *url.URL, resp *http.Response) ([]byte, []string, string, error) {
+// ParseResponse parses the response and replaces its links with local filenames
+func (p *Parser) ParseResponse(urlFrom *url.URL, resp *http.Response) ([]byte, []string, string, error) {
 	// file format
 	// fileFormat := GetFileFormat(resp.Header.Get("Content-Type"), "txt")
 
@@ -76,7 +76,7 @@ func (p *ParserToLocalFiles) ParseResponse(urlFrom *url.URL, resp *http.Response
 			newLink = basePath + link
 
 			subLinks = append(subLinks, newLink)
-			subLinksToLocalMap[link] = URLToFilePath(p.localFileDirectory, newLink)
+			subLinksToLocalMap[link] = URLToFileName(newLink)
 
 		} else if !strings.HasPrefix(link, "#") {
 
@@ -86,7 +86,7 @@ func (p *ParserToLocalFiles) ParseResponse(urlFrom *url.URL, resp *http.Response
 			}
 
 			subLinks = append(subLinks, link)
-			subLinksToLocalMap[link] = URLToFilePath(p.localFileDirectory, link)
+			subLinksToLocalMap[link] = URLToFileName(link)
 		}
 	}
 	//endregion
@@ -95,7 +95,7 @@ func (p *ParserToLocalFiles) ParseResponse(urlFrom *url.URL, resp *http.Response
 	fileData = replaceLinks(fileData, subLinksToLocalMap)
 	//endregion
 
-	fileName := URLToFilePath(p.localFileDirectory, urlFrom.String()) //, fileFormat)
+	fileName := URLToFileName(urlFrom.String()) //, fileFormat)
 
 	return fileData, subLinks, fileName, nil
 }

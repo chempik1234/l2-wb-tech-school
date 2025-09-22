@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sync/atomic"
 	"time"
 )
 
@@ -38,8 +37,6 @@ func main() {
 		log.Fatalln(fmt.Errorf("invalid url: %s: %w", urlString, err))
 	}
 
-	pageNumber := &atomic.Int32{}
-
 	var fileDir string
 	fileDir, err = os.Getwd()
 	if err != nil {
@@ -54,7 +51,7 @@ func main() {
 		NewParserToLocalFiles(fileDir),
 	)
 
-	err = downloaderObj.Start(urlParsed, pageNumber, fileDir, depth)
+	err = downloaderObj.Start(urlParsed, fileDir, depth)
 	if err != nil {
 		log.Fatalln(fmt.Errorf("failed to download page: %w", err))
 	}

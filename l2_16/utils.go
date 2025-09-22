@@ -5,7 +5,6 @@ import (
 	"golang.org/x/net/html"
 	"io"
 	"net/url"
-	"path"
 	"strings"
 )
 
@@ -78,8 +77,8 @@ func IsSameDomain(host string, someURL string) (bool, error) {
 	return urlParsed.Host == host, nil
 }
 
-// URLToFilePath is used to convert URL into proper fileoath
-func URLToFilePath(localFileDirectory string, someURL string) string { // , fileFormat string
+// URLToFileName is used to convert URL into proper filename
+func URLToFileName(someURL string) string {
 	urlRunes := []rune(someURL)
 	name := make([]rune, len(urlRunes))
 	for i, c := range urlRunes {
@@ -98,5 +97,5 @@ func URLToFilePath(localFileDirectory string, someURL string) string { // , file
 		fileName = fileName + ".html"
 	}
 
-	return path.Join(localFileDirectory, fileName) //fmt.Sprintf("%s.%s", string(name), fileFormat))
+	return fileName //fmt.Sprintf("%s.%s", string(name), fileFormat))
 }
