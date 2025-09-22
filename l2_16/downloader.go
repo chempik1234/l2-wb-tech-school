@@ -22,27 +22,34 @@ type Downloader struct {
 
 	// parser is the Parser used for processing input html data, can be replaced
 	parser IParser
+
+	// workersLocker helps to parallel the work
+	workersLocker IWorkerLocker
 }
 
 // NewDownloader creates a new *Downloader with given client and retries and empty savedLinks cache
-func NewDownloader(client *http.Client, retries int, parser *Parser) *Downloader {
+func NewDownloader(client *http.Client, retries int, parser *Parser, workerLocker IWorkerLocker) *Downloader {
 	return &Downloader{
-		client:     client,
-		savedLinks: make(map[string]struct{}, 0),
-		retries:    retries,
-		mu:         &sync.Mutex{},
-		parser:     parser,
+		client:        client,
+		savedLinks:    make(map[string]struct{}, 0),
+		retries:       retries,
+		mu:            &sync.Mutex{},
+		parser:        parser,
+		workersLocker: workerLocker,
 	}
 }
 
 // download downloads page by url, saves as {pageNum}.html
 //
-// depthLeft goes like 10, 9, 8, .., 0
+// depthLeft goes like 10, 9, 8, ..., 0
 //
 // where 10 is input depth (-d 10), with every level it goes down
 //
 // if depthLeft - 1 == 0 then return, else continue
 func (d *Downloader) download(urlToDownload *url.URL, saveDirectory string, depthLeft int) error {
+	d.workersLocker.Lock()
+	defer d.workersLocker.Unlock()
+
 	urlString := urlToDownload.String()
 	// we should not lock it for too long
 	d.mu.Lock()

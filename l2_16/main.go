@@ -14,11 +14,13 @@ func main() {
 	dFlag := flag.Int("d", 0, "depth (default 0 for only root page)")
 	tFlag := flag.Int("t", 10, "timeout seconds per page (default 10)")
 	rFlag := flag.Int("r", 1, "max tries per page (default 1)")
+	wFlag := flag.Uint("w", 10, "max worker pool (default 10)")
 	flag.Parse()
 
 	depth := *dFlag
 	timeoutSeconds := *tFlag
 	retries := *rFlag
+	maxWorkers := uint32(*wFlag)
 
 	if timeoutSeconds <= 0 {
 		log.Fatal("timeout seconds must be greater than zero")
@@ -49,6 +51,7 @@ func main() {
 		},
 		retries,
 		NewParserToLocalFiles(fileDir),
+		NewPoolWorkerLocker(maxWorkers),
 	)
 
 	err = downloaderObj.Start(urlParsed, fileDir, depth)
